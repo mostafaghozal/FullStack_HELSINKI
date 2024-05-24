@@ -1,0 +1,3 @@
+  //npm install json-server@0 
+  to install altest stable version
+  bec last one is not stable

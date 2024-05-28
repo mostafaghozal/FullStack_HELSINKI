@@ -1,6 +1,25 @@
 const http = require('http')
 const express = require('express')
 const cors = require('cors')
+const mongoose = require('mongoose')
+const phonebookEntrySchema = new mongoose.Schema({
+  name: String,
+  number: String,
+});
+
+module.exports = mongoose.model('PhonebookEntry', phonebookEntrySchema);
+
+
+
+mongoose.connect('mongodb+srv://ghozal:ghozal@cluster0.7oykssj.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0', {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+});
+
+const db = mongoose.connection;
+db.on('error', console.error.bind(console, 'MongoDB connection error:'));
+
+
 
 const app = express()
 app.use(express.static('dist'))

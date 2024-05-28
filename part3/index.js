@@ -3,6 +3,7 @@ const express = require('express')
 const cors = require('cors')
 
 const app = express()
+app.use(express.static('dist'))
 const bodyParser = require('body-parser'); // Import body-parser module
 var morgan = require('morgan')
 morgan.token('req-body', (req, res) => {

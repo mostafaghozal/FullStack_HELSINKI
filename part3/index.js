@@ -15,7 +15,6 @@ const PhonebookEntry = require('./phonebookEntry');
 const app = express()
 app.use(express.static('dist'))
 const bodyParser = require('body-parser'); // Import body-parser module
-var morgan = require('morgan')
 morgan.token('req-body', (req, res) => {
   if (req.method === 'POST') {
     return JSON.stringify(req.body);

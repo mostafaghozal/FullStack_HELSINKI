@@ -1,36 +1,80 @@
 const mongoose = require('mongoose');
-const PhonebookEntry = require('./phonebookEntry');
+const readline = require('readline');
 
-mongoose.connect('mongodb+srv://ghozal:ghozal@cluster0.7oykssj.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0', {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-});
-
-const db = mongoose.connection;
-db.on('error', console.error.bind(console, 'MongoDB connection error:'));
-
-// Function to initialize database with pre-defined values
-const initializeDatabase = async () => {
-  try {
-    // Check if database already contains entries
-    const count = await PhonebookEntry.countDocuments({});
-    if (count === 0) {
-      // Pre-defined values to insert
-      const preDefinedValues = [
-        { id: 1, name: "Arto Hellas", number: "040-123456" },
-        { id: 2, name: "Ada Lovelace", number: "39-44-5323523" },
-        { id: 3, name: "Dan Abramov", number: "12-43-234345" },
-        { id: 4, name: "Mary Poppendieck", number: "39-23-6423122" }
-      ];
-
-      // Insert pre-defined values into the database
-      await PhonebookEntry.insertMany(preDefinedValues);
-      console.log('Pre-defined values inserted into the database.');
-    }
-  } catch (error) {
-    console.error('Error initializing database:', error);
-  }
+// Connect to MongoDB Atlas
+const connectToDatabase = async (password) => {
+  const uri = `mongodb+srv://ghozal:${password}@cluster0.7oykssj.mongodb.net/?retryWrites=true&w=majority`;
+  await mongoose.connect(uri, { useNewUrlParser: true, useUnifiedTopology: true });
 };
 
-// Export database connection and initialization function
-module.exports = { db, initializeDatabase };
+// Function to get password from user input
+const getPassword = () => {
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+  });
+
+  return new Promise((resolve) => {
+    rl.question('Enter your MongoDB Atlas password: ', (password) => {
+      resolve(password);
+      rl.close();
+    });
+  });
+};
+
+// Add a phone number to the database
+const addPhoneNumber = async (name, number) => {
+  const PhonebookEntry = mongoose.model('PhonebookEntry', new mongoose.Schema({
+    name: String,
+    number: String,
+  }));
+  const phonebookEntry = new PhonebookEntry({ name, number });
+  await phonebookEntry.save();
+};
+
+// List all phone numbers in the database
+const listPhoneNumbers = async () => {
+  const PhonebookEntry = mongoose.model('PhonebookEntry', new mongoose.Schema({
+    name: String,
+    number: String,
+  }));
+  const phonebookEntries = await PhonebookEntry.find({});
+  return phonebookEntries;
+};
+
+// Main function to handle command line arguments
+const main = async () => {
+  // Get MongoDB Atlas password from command-line arguments
+  const password = process.argv[2];
+
+  if (!password) {
+    // If password is not provided as argument, get it from user input
+    const userInputPassword = await getPassword();
+    await connectToDatabase(userInputPassword);
+  } else {
+    // Connect to MongoDB Atlas using the provided password
+    await connectToDatabase(password);
+  }
+
+  // Check if additional parameters are provided
+  if (process.argv.length > 3) {
+    // Add new phone number to the database
+    const name = process.argv[3].replace(/-/g, ' ');
+    const number = process.argv[4];
+    await addPhoneNumber(name, number);
+    console.log(`added ${name} number ${number} to phonebook`);
+  } else {
+    // List all phone numbers in the database
+    console.log('phonebook:');
+    const phonebookEntries = await listPhoneNumbers();
+    phonebookEntries.forEach(entry => {
+      console.log(`${entry.name} ${entry.number}`);
+    });
+  }
+
+  // Close the MongoDB connection
+  mongoose.connection.close();
+};
+
+// Call the main function
+main();

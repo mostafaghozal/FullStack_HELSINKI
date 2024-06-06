@@ -1,119 +1,31 @@
-const http = require('http')
-const express = require('express')
-const cors = require('cors')
-const morgan = require('morgan');
-const mongoose = require('mongoose')
-const db = require('./db');
-const PhonebookEntry = require('./phonebookEntry');
+const express = require('express');
+const db = require('./db'); // Import the MongoDB connection from db.js
 
+// const mongoose = require('mongoose');
+const PhonebookEntry = require('./phonebookEntry'); // Assuming you've defined a model
 
+const app = express();
+app.use(express.json());
 
-/// not sure of mongo code yet
+// // Connect to MongoDB
+// mongoose.connect('mongodb://localhost:27017/phonebook', { useNewUrlParser: true, useUnifiedTopology: true })
+//   .then(() => console.log('Connected to MongoDB'))
+//   .catch((error) => console.error('Error connecting to MongoDB:', error.message));
 
-
-
-const app = express()
-app.use(express.static('dist'))
-const bodyParser = require('body-parser'); // Import body-parser module
-morgan.token('req-body', (req, res) => {
-  if (req.method === 'POST') {
-    return JSON.stringify(req.body);
-  } else {
-    return '-';
+// Route to fetch all phonebook entries
+app.get('/api/phonebook', async (req, res) => {
+  try {
+    const phonebookEntries = await PhonebookEntry.find({});
+    res.json(phonebookEntries);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
-app.use(morgan(':method :url :status :res[content-length] - :response-time ms :req-body'));
-app.use(cors());
 
-// Middleware to parse JSON bodies
-app.use(bodyParser.json());
+// Other routes...
 
-
-  app.get('/', (request, response) => {
-    response.send('<h1>Hello World!</h1>')
-  })
-  app.get('/persons', async (request, response) => {
-    try {
-      const persons = await PhonebookEntry.find({});
-      response.json(persons);
-    } catch (error) {
-      console.error(error);
-      response.status(500).json({ error: 'Internal server error' });
-    }
-  });
-  
-  app.get('/info', async (req, res) => {
-    try {
-      const phonebookEntries = await PhonebookEntry.countDocuments({});
-      const requestTime = new Date();
-  
-      const responseText = `
-        <p>Phonebook has info for ${phonebookEntries} people</p>
-        <p>${requestTime}</p>
-      `;
-    
-      res.send(responseText);
-    } catch (error) {
-      console.error(error);
-      res.status(500).json({ error: 'Internal server error' });
-    }
-  });
-    
-  app.get('/persons/:id', async (request, response) => {
-    const id = request.params.id;
-    
-    try {
-      const person = await PhonebookEntry.findById(id);
-      if (person) {
-        response.json(person);
-      } else {
-        response.status(404).end();
-      }
-    } catch (error) {
-      console.error(error);
-      response.status(500).json({ error: 'Internal server error' });
-    }
-  });
-  
-  app.post('/persons', async (request, response) => {
-    const body = request.body;
-  
-    if (!body.name || !body.number) {
-      return response.status(400).json({ error: 'Name or number missing' });
-    }
-  
-    try {
-      const nameExists = await PhonebookEntry.exists({ name: body.name });
-      if (nameExists) {
-        return response.status(400).json({ error: 'Name already exists in the phonebook' });
-      }
-  
-      const newPerson = new PhonebookEntry({
-        name: body.name,
-        number: body.number,
-      });
-  
-      const savedPerson = await newPerson.save();
-      response.json(savedPerson);
-    } catch (error) {
-      console.error(error);
-      response.status(500).json({ error: 'Internal server error' });
-    }
-  });
-  
-  app.delete('/persons/:id', async (request, response) => {
-    const id = request.params.id;
-    
-    try {
-      await PhonebookEntry.findByIdAndDelete(id);
-      response.status(204).end();
-    } catch (error) {
-      console.error(error);
-      response.status(500).json({ error: 'Internal server error' });
-    }
-  });
-  
-  const PORT = process.env.PORT || 3001;
-  app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
-  });
+const PORT = process.env.PORT || 3001;
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
